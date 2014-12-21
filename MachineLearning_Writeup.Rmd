@@ -1,0 +1,59 @@
+---
+title: "MachineLearning_Writeup"
+output: html_document
+---
+
+## Synopisis
+This porject trys to predict classe with the randomForest algorithm. 
+
+## Settings and imputting data
+
+```{r}
+library(caret)
+library(randomForest)
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+colnames(testing)[160] <- "classe"
+```
+
+## Cleaning data
+
+```{r}
+# Eliminating variables with to many NAs or blank spaces are eliminated
+
+cleanIndex <- c("X", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "new_window", "num_window", "roll_belt", "pitch_belt", "yaw_belt", "total_accel_belt", "gyros_belt_x", "gyros_belt_y", "gyros_belt_z", "accel_belt_x", "accel_belt_y", "accel_belt_z", "magnet_belt_x", "magnet_belt_y", "magnet_belt_z", "roll_arm", "pitch_arm", "yaw_arm", "total_accel_arm", "gyros_arm_x", "gyros_arm_y",  "gyros_arm_z", "accel_arm_x", "accel_arm_y", "accel_arm_z", "magnet_arm_x", "magnet_arm_y", "magnet_arm_z", "roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell", "total_accel_dumbbell", "gyros_dumbbell_x", "gyros_dumbbell_y", "gyros_dumbbell_z", "accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z", "magnet_dumbbell_x", "magnet_dumbbell_y", "magnet_dumbbell_z", "roll_forearm", "pitch_forearm", "yaw_forearm", "total_accel_forearm", "gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z", "accel_forearm_x", "accel_forearm_y", "accel_forearm_z", "magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z", "classe")
+cleanTrain <- training[, cleanIndex] 
+cleanTest <- testing[, cleanIndex]
+
+```
+
+## Using randomForest to get the predict funtion and then use it to predict testing classe
+
+```{r}
+# In order to avoid time-consuming computation, 10% of the training data is extracted for randomForest function. And we will verify the reliability of the results by applying it to the rest training data
+
+ctIndex <- createDataPartition(y=cleanTrain$classe, p = 0.1, list = FALSE)
+cTrain <- cleanTrain[ctIndex, ]
+
+# The 'join' step is pretty important as it will coerce types of training and testing data, helping us avoid the data matching problem.
+
+join <- rbind(cTrain, cleanTest)
+train <- join[c(1:dim(cTrain)[1]), ]
+test <- join[c((dim(cTrain)[1]+1):dim(join)[1]), ]
+
+# Run the randomForest algorithm and use it to predict
+
+set.seed(32323)
+rf <- randomForest(classe ~ ., data=train, ntree = 100, mtry=3,importance=TRUE)
+
+# Examine how randomForest do in the whole training dataset
+table(predict(rf, cleanTrain), cleanTrain$classe)
+
+# Predict testing classe
+
+pred <- predict(rf, test)
+pred
+
+```
+
+
